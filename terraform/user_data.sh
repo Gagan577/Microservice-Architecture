@@ -87,8 +87,8 @@ mkdir -p /var/log/${service_name}
 echo "Cloning repository..."
 cd /opt/${service_name}/source
 
-GIT_REPO="${git_repo_url:-https://github.com/Gagan577/Microservice-Architecture.git}"
-GIT_BRANCH="${git_branch:-main}"
+GIT_REPO="${git_repo_url}"
+GIT_BRANCH="${git_branch}"
 
 git clone --branch $${GIT_BRANCH} --single-branch $${GIT_REPO} .
 
@@ -288,37 +288,40 @@ cat > /opt/${service_name}/redeploy.sh << 'REDEPLOY_SCRIPT'
 set -e
 echo "Starting redeploy at $(date)"
 
-SERVICE_NAME="${service_name}"
-SOURCE_DIR="/opt/$${SERVICE_NAME}/source"
-DEPLOY_DIR="/opt/$${SERVICE_NAME}"
+SERVICE_NAME="$(basename $(dirname $0))"
+SOURCE_DIR="/opt/$SERVICE_NAME/source"
+DEPLOY_DIR="/opt/$SERVICE_NAME"
 
 # Stop the service
-echo "Stopping $${SERVICE_NAME}..."
-systemctl stop $${SERVICE_NAME} || true
+echo "Stopping $SERVICE_NAME..."
+systemctl stop $SERVICE_NAME || true
 
 # Pull latest code
 echo "Pulling latest code..."
-cd $${SOURCE_DIR}
+cd $SOURCE_DIR
 git pull origin main
 
 # Rebuild
 echo "Building..."
-cd $${SOURCE_DIR}/$${SERVICE_NAME}
+cd $SOURCE_DIR/$SERVICE_NAME
 mvn clean package -DskipTests -q
 
 # Deploy new JAR
 echo "Deploying..."
 JAR_FILE=$(ls target/*.jar | grep -v original | head -1)
-cp $${JAR_FILE} $${DEPLOY_DIR}/$${SERVICE_NAME}.jar
+cp $JAR_FILE $DEPLOY_DIR/$SERVICE_NAME.jar
 
 # Start the service
-echo "Starting $${SERVICE_NAME}..."
-systemctl start $${SERVICE_NAME}
+echo "Starting $SERVICE_NAME..."
+systemctl start $SERVICE_NAME
 
 # Wait for health check
 echo "Waiting for service to be healthy..."
 sleep 30
-curl -s "http://localhost:${service_port}/actuator/health" | jq .
+
+# Get port from systemd service file
+SERVICE_PORT=$(grep -oP 'server.port=\K[0-9]+' /opt/$SERVICE_NAME/config/*.yml 2>/dev/null || echo "8080")
+curl -s "http://localhost:$SERVICE_PORT/actuator/health" | jq .
 
 echo "Redeploy completed at $(date)"
 REDEPLOY_SCRIPT

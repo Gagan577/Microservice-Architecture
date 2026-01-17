@@ -133,5 +133,5 @@ output "ssh_product_stock" {
 output "database_connection_string" {
   description = "Database connection string (without password)"
   value       = "jdbc:postgresql://${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}?user=${var.db_username}"
-  sensitive   = false
+  sensitive   = true
 }

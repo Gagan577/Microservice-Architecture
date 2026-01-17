@@ -1,0 +1,175 @@
+# ============================================
+# SHOP MANAGEMENT SERVICE - APPLICATION CONFIGURATION
+# ============================================
+# Environment: Production-Ready Configuration
+# Version: 1.0.0
+# ============================================
+
+spring:
+  application:
+    name: shop-management
+
+  # ============================================
+  # DATABASE CONFIGURATION (Amazon RDS PostgreSQL)
+  # ============================================
+  datasource:
+    url: jdbc:postgresql://${RDS_HOSTNAME:localhost}:${RDS_PORT:5432}/${RDS_DB_NAME:microservices}?currentSchema=shop_schema
+    username: ${RDS_USERNAME:shop_user}
+    password: ${RDS_PASSWORD:shop_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: ShopHikariPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 30000
+      leak-detection-threshold: 60000
+      validation-timeout: 5000
+
+  # ============================================
+  # JPA CONFIGURATION
+  # ============================================
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: shop_schema
+        jdbc:
+          time_zone: UTC
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  # ============================================
+  # FLYWAY MIGRATION
+  # ============================================
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: shop_schema
+    table: flyway_schema_history
+    validate-on-migrate: true
+
+  # ============================================
+  # GRAPHQL CONFIGURATION
+  # ============================================
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    schema:
+      printer:
+        enabled: true
+      locations: classpath:graphql/
+
+  # ============================================
+  # JACKSON SERIALIZATION
+  # ============================================
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+
+  # ============================================
+  # GRACEFUL SHUTDOWN
+  # ============================================
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+# ============================================
+# SERVER CONFIGURATION
+# ============================================
+server:
+  port: 8081
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 20000
+    max-connections: 10000
+    accept-count: 100
+    threads:
+      max: 200
+      min-spare: 10
+
+# ============================================
+# INTER-SERVICE COMMUNICATION
+# ============================================
+product:
+  service:
+    base-url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+    soap-url: ${PRODUCT_SERVICE_SOAP_URL:http://localhost:8082/ws}
+    graphql-url: ${PRODUCT_SERVICE_GRAPHQL_URL:http://localhost:8082/graphql}
+    connect-timeout: 5000
+    read-timeout: 10000
+    retry-attempts: 3
+    retry-delay: 1000
+
+# ============================================
+# LOGGING CONFIGURATION
+# ============================================
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+    com.enterprise.shop: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.ws: DEBUG
+  service:
+    name: shop-management
+  environment: ${ENVIRONMENT:development}
+  file:
+    path: /var/log/shop-management
+
+# ============================================
+# ACTUATOR & MONITORING
+# ============================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:development}
+
+# ============================================
+# OPENAPI / SWAGGER CONFIGURATION
+# ============================================
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: true
+
+# ============================================
+# SOAP WEB SERVICES
+# ============================================
+soap:
+  service:
+    namespace: http://enterprise.com/shop/soap

@@ -35,3 +35,6 @@ db_backup_retention_period = 7
 
 # Logging
 log_retention_days = 30
+# Git Repository (for server-side build)
+git_repo_url = "https://github.com/Gagan577/Microservice-Architecture.git"
+git_branch   = "main"

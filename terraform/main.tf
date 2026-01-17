@@ -444,15 +444,17 @@ resource "aws_instance" "shop_management" {
   }
   
   user_data = templatefile("${path.module}/user_data.sh", {
-    service_name     = "shop-management"
-    service_port     = 8081
-    db_host          = aws_db_instance.main.endpoint
-    db_name          = var.db_name
-    db_username      = var.db_username
-    db_password      = var.db_password
+    service_name        = "shop-management"
+    service_port        = 8081
+    db_host             = aws_db_instance.main.endpoint
+    db_name             = var.db_name
+    db_username         = var.db_username
+    db_password         = var.db_password
     product_service_url = "http://${aws_instance.product_stock.private_ip}:8082"
-    java_opts        = var.java_opts
-    spring_profile   = var.environment
+    java_opts           = var.java_opts
+    spring_profile      = var.environment
+    git_repo_url        = var.git_repo_url
+    git_branch          = var.git_branch
   })
   
   tags = {
@@ -478,15 +480,17 @@ resource "aws_instance" "product_stock" {
   }
   
   user_data = templatefile("${path.module}/user_data.sh", {
-    service_name     = "product-stock"
-    service_port     = 8082
-    db_host          = aws_db_instance.main.endpoint
-    db_name          = var.db_name
-    db_username      = var.db_username
-    db_password      = var.db_password
+    service_name        = "product-stock"
+    service_port        = 8082
+    db_host             = aws_db_instance.main.endpoint
+    db_name             = var.db_name
+    db_username         = var.db_username
+    db_password         = var.db_password
     product_service_url = ""
-    java_opts        = var.java_opts
-    spring_profile   = var.environment
+    java_opts           = var.java_opts
+    spring_profile      = var.environment
+    git_repo_url        = var.git_repo_url
+    git_branch          = var.git_branch
   })
   
   tags = {

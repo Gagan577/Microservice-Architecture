@@ -277,17 +277,17 @@ curl http://localhost:8082/actuator/health
 
 ## ⚙️ Configuration
 
-### Application Properties
+### Application Configuration (YAML)
 
-Each service has environment-specific configuration:
+Each service uses **YAML-based configuration** (`application.yml`) with environment-specific overrides:
 
 | Property | Description | Default |
 |----------|-------------|---------|
-| `DB_HOST` | Database host | localhost |
-| `DB_PORT` | Database port | 5432 |
-| `DB_NAME` | Database name | microservices |
-| `DB_USERNAME` | Database user | postgres |
-| `DB_PASSWORD` | Database password | - |
+| `RDS_HOSTNAME` | Database host | localhost |
+| `RDS_PORT` | Database port | 5432 |
+| `RDS_DB_NAME` | Database name | microservices |
+| `RDS_USERNAME` | Database user | postgres |
+| `RDS_PASSWORD` | Database password | - |
 | `PRODUCT_SERVICE_URL` | Product service URL | http://localhost:8082 |
 
 ### Profiles
@@ -399,6 +399,22 @@ terraform/
 - IAM Roles
 - CloudWatch Log Groups
 
+### Server-Side Build Architecture
+
+The deployment uses **server-side building** - EC2 instances clone the repository and build the application directly:
+
+1. **EC2 boots up** → Runs user_data.sh script
+2. **Installs dependencies** → Java 21, Maven 3.9
+3. **Clones repository** → From configured Git URL/branch
+4. **Builds application** → `mvn clean package -DskipTests`
+5. **Starts service** → Systemd manages the application
+
+This approach ensures:
+- ✅ No need to upload pre-built JARs
+- ✅ Easy redeployment with `redeploy.sh` script
+- ✅ Always builds from latest code
+- ✅ Consistent build environment
+
 ### Deploy to AWS
 
 ```bash
@@ -406,7 +422,7 @@ cd terraform
 
 # Copy and configure variables
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values
+# Edit terraform.tfvars with your values (including git_repo_url)
 
 # Initialize Terraform
 terraform init
@@ -414,33 +430,31 @@ terraform init
 # Preview changes
 terraform plan
 
-# Deploy infrastructure
+# Deploy infrastructure (builds happen on EC2)
 terraform apply
 
 # Get outputs
 terraform output
 ```
 
-### Manual Deployment
+### Redeploy Updates
+
+After pushing code changes to GitHub, redeploy on EC2:
 
 ```bash
-# Build the services
-./scripts/build.sh --all
+# SSH to EC2 instance
+ssh ec2-user@<instance-ip>
 
-# Copy JARs to EC2 instances
-scp shop-management/target/*.jar ec2-user@<shop-host>:/opt/app/
-scp product-stock/target/*.jar ec2-user@<product-host>:/opt/app/
-
-# Start services on EC2
-./scripts/start.sh --service shop-management --profile prod
-./scripts/start.sh --service product-stock --profile prod
+# Run redeploy script (pulls, builds, restarts)
+sudo /opt/shop-management/redeploy.sh
+sudo /opt/product-stock/redeploy.sh
 ```
 
 ## 📝 Shell Scripts
 
 ### build.sh
 
-Build services with various options.
+Build services locally for development/testing:
 
 ```bash
 # Build all services

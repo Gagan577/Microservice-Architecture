@@ -3,7 +3,8 @@
 # EC2 User Data Script for Microservice Deployment
 #
 # This script is executed when an EC2 instance is first launched.
-# It installs Java 21, downloads the service JAR, and starts the application.
+# It installs Java 21, Maven, clones the repository, builds the service,
+# and starts the application.
 #
 # Template variables (provided by Terraform):
 #   - service_name: Name of the service (shop-management or product-stock)
@@ -15,6 +16,8 @@
 #   - product_service_url: URL of product-stock service (for shop-management)
 #   - java_opts: JVM options
 #   - spring_profile: Spring profile to activate
+#   - git_repo_url: GitHub repository URL
+#   - git_branch: Git branch to checkout (default: main)
 #===============================================================================
 
 set -e
@@ -36,13 +39,30 @@ dnf update -y
 echo "Installing required packages..."
 dnf install -y \
     java-21-amazon-corretto \
+    java-21-amazon-corretto-devel \
     amazon-cloudwatch-agent \
     jq \
     curl \
-    wget
+    wget \
+    git
 
-# Verify Java installation
+# Install Maven
+echo "Installing Maven..."
+MAVEN_VERSION="3.9.6"
+cd /tmp
+wget https://archive.apache.org/dist/maven/maven-3/$${MAVEN_VERSION}/binaries/apache-maven-$${MAVEN_VERSION}-bin.tar.gz
+tar -xzf apache-maven-$${MAVEN_VERSION}-bin.tar.gz
+mv apache-maven-$${MAVEN_VERSION} /opt/maven
+ln -s /opt/maven/bin/mvn /usr/bin/mvn
+
+# Set JAVA_HOME
+echo "export JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto" >> /etc/profile.d/java.sh
+echo "export PATH=\$JAVA_HOME/bin:\$PATH" >> /etc/profile.d/java.sh
+source /etc/profile.d/java.sh
+
+# Verify installations
 java -version
+mvn -version
 
 #-------------------------------------------------------------------------------
 # Create Service User and Directories
@@ -57,13 +77,39 @@ useradd -r -s /sbin/nologin appuser || true
 mkdir -p /opt/${service_name}
 mkdir -p /opt/${service_name}/logs
 mkdir -p /opt/${service_name}/config
+mkdir -p /opt/${service_name}/source
 mkdir -p /var/log/${service_name}
 
 #-------------------------------------------------------------------------------
-# Configure Application Properties
+# Clone Repository and Build Application
 #-------------------------------------------------------------------------------
 
-echo "Creating application configuration..."
+echo "Cloning repository..."
+cd /opt/${service_name}/source
+
+GIT_REPO="${git_repo_url:-https://github.com/Gagan577/Microservice-Architecture.git}"
+GIT_BRANCH="${git_branch:-main}"
+
+git clone --branch $${GIT_BRANCH} --single-branch $${GIT_REPO} .
+
+echo "Building ${service_name} service..."
+cd /opt/${service_name}/source/${service_name}
+
+# Build the service (skip tests for faster deployment)
+mvn clean package -DskipTests -q
+
+# Copy JAR to deployment directory
+JAR_FILE=$(ls target/*.jar | grep -v original | head -1)
+cp $${JAR_FILE} /opt/${service_name}/${service_name}.jar
+
+echo "Build completed successfully!"
+ls -la /opt/${service_name}/${service_name}.jar
+
+#-------------------------------------------------------------------------------
+# Configure Application Properties (Override for Production)
+#-------------------------------------------------------------------------------
+
+echo "Creating production application configuration..."
 
 # Determine schema based on service
 if [ "${service_name}" == "shop-management" ]; then
@@ -72,85 +118,65 @@ else
     DB_SCHEMA="product_schema"
 fi
 
-cat > /opt/${service_name}/config/application-${spring_profile}.properties << EOF
-# Server Configuration
-server.port=${service_port}
-spring.application.name=${service_name}
+cat > /opt/${service_name}/config/application-${spring_profile}.yml << EOF
+# ============================================
+# ${service_name} - Production Configuration
+# ============================================
 
-# Database Configuration
-spring.datasource.url=jdbc:postgresql://${db_host}/${db_name}?currentSchema=$${DB_SCHEMA}
-spring.datasource.username=${db_username}
-spring.datasource.password=${db_password}
-spring.datasource.driver-class-name=org.postgresql.Driver
+spring:
+  application:
+    name: ${service_name}
 
-# HikariCP Configuration
-spring.datasource.hikari.minimum-idle=5
-spring.datasource.hikari.maximum-pool-size=20
-spring.datasource.hikari.idle-timeout=300000
-spring.datasource.hikari.max-lifetime=600000
-spring.datasource.hikari.connection-timeout=30000
+  datasource:
+    url: jdbc:postgresql://${db_host}/${db_name}?currentSchema=$${DB_SCHEMA}
+    username: ${db_username}
+    password: ${db_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 30000
 
-# JPA Configuration
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.show-sql=false
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
 
-# Flyway Configuration
-spring.flyway.enabled=true
-spring.flyway.baseline-on-migrate=true
-spring.flyway.schemas=$${DB_SCHEMA}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: $${DB_SCHEMA}
 
-# Actuator Configuration
-management.endpoints.web.exposure.include=health,info,metrics,prometheus
-management.endpoint.health.show-details=always
+server:
+  port: ${service_port}
+  shutdown: graceful
 
-# Logging Configuration
-logging.level.root=INFO
-logging.level.com.enterprise=DEBUG
-logging.file.path=/var/log/${service_name}
-logging.file.name=/var/log/${service_name}/${service_name}.log
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
 
-# Service URLs
+logging:
+  level:
+    root: INFO
+    com.enterprise: DEBUG
+  file:
+    path: /var/log/${service_name}
+    name: /var/log/${service_name}/${service_name}.log
+
 %{ if product_service_url != "" ~}
-product.service.url=${product_service_url}
+product:
+  service:
+    base-url: ${product_service_url}
 %{ endif ~}
 EOF
-
-#-------------------------------------------------------------------------------
-# Download Service JAR
-#-------------------------------------------------------------------------------
-
-echo "Downloading service JAR..."
-
-# In production, you would download from S3 or another artifact repository
-# For now, we'll create a placeholder for the JAR location
-JAR_FILE="/opt/${service_name}/${service_name}.jar"
-
-# Example: Download from S3
-# aws s3 cp s3://your-artifact-bucket/${service_name}/${service_name}-1.0.0.jar $JAR_FILE
-
-# For initial setup, create a placeholder script that waits for JAR
-cat > /opt/${service_name}/wait-for-jar.sh << 'WAIT_SCRIPT'
-#!/bin/bash
-JAR_FILE="/opt/${service_name}/${service_name}.jar"
-MAX_WAIT=300
-WAITED=0
-
-while [ ! -f "$JAR_FILE" ] && [ $WAITED -lt $MAX_WAIT ]; do
-    echo "Waiting for JAR file: $JAR_FILE"
-    sleep 10
-    WAITED=$((WAITED + 10))
-done
-
-if [ -f "$JAR_FILE" ]; then
-    echo "JAR file found!"
-    exit 0
-else
-    echo "JAR file not found after ${MAX_WAIT}s"
-    exit 1
-fi
-WAIT_SCRIPT
-chmod +x /opt/${service_name}/wait-for-jar.sh
 
 #-------------------------------------------------------------------------------
 # Create Systemd Service
@@ -169,10 +195,11 @@ User=appuser
 Group=appuser
 WorkingDirectory=/opt/${service_name}
 
+Environment="JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto"
 Environment="JAVA_OPTS=${java_opts}"
 Environment="SPRING_PROFILES_ACTIVE=${spring_profile}"
 
-ExecStart=/usr/bin/java \$JAVA_OPTS -jar /opt/${service_name}/${service_name}.jar --spring.config.location=file:/opt/${service_name}/config/
+ExecStart=/usr/bin/java \$JAVA_OPTS -jar /opt/${service_name}/${service_name}.jar --spring.config.additional-location=file:/opt/${service_name}/config/
 
 Restart=always
 RestartSec=10
@@ -216,6 +243,12 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOF
                         "log_group_name": "/aws/ec2/microservice-arch/${service_name}-errors",
                         "log_stream_name": "{instance_id}",
                         "timezone": "UTC"
+                    },
+                    {
+                        "file_path": "/var/log/user-data.log",
+                        "log_group_name": "/aws/ec2/microservice-arch/${service_name}-deployment",
+                        "log_stream_name": "{instance_id}",
+                        "timezone": "UTC"
                     }
                 ]
             }
@@ -243,6 +276,55 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOF
 EOF
 
 #-------------------------------------------------------------------------------
+# Create Update/Redeploy Script
+#-------------------------------------------------------------------------------
+
+echo "Creating redeploy script..."
+
+cat > /opt/${service_name}/redeploy.sh << 'REDEPLOY_SCRIPT'
+#!/bin/bash
+# Redeploy script - Pull latest code and rebuild
+
+set -e
+echo "Starting redeploy at $(date)"
+
+SERVICE_NAME="${service_name}"
+SOURCE_DIR="/opt/$${SERVICE_NAME}/source"
+DEPLOY_DIR="/opt/$${SERVICE_NAME}"
+
+# Stop the service
+echo "Stopping $${SERVICE_NAME}..."
+systemctl stop $${SERVICE_NAME} || true
+
+# Pull latest code
+echo "Pulling latest code..."
+cd $${SOURCE_DIR}
+git pull origin main
+
+# Rebuild
+echo "Building..."
+cd $${SOURCE_DIR}/$${SERVICE_NAME}
+mvn clean package -DskipTests -q
+
+# Deploy new JAR
+echo "Deploying..."
+JAR_FILE=$(ls target/*.jar | grep -v original | head -1)
+cp $${JAR_FILE} $${DEPLOY_DIR}/$${SERVICE_NAME}.jar
+
+# Start the service
+echo "Starting $${SERVICE_NAME}..."
+systemctl start $${SERVICE_NAME}
+
+# Wait for health check
+echo "Waiting for service to be healthy..."
+sleep 30
+curl -s "http://localhost:${service_port}/actuator/health" | jq .
+
+echo "Redeploy completed at $(date)"
+REDEPLOY_SCRIPT
+chmod +x /opt/${service_name}/redeploy.sh
+
+#-------------------------------------------------------------------------------
 # Set Permissions
 #-------------------------------------------------------------------------------
 
@@ -250,7 +332,8 @@ echo "Setting permissions..."
 chown -R appuser:appuser /opt/${service_name}
 chown -R appuser:appuser /var/log/${service_name}
 chmod 750 /opt/${service_name}
-chmod 640 /opt/${service_name}/config/*
+chmod 640 /opt/${service_name}/config/* || true
+chmod +x /opt/${service_name}/redeploy.sh
 
 #-------------------------------------------------------------------------------
 # Enable and Start Services
@@ -262,11 +345,12 @@ echo "Enabling services..."
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
 
-# Enable application service (will start when JAR is available)
-systemctl enable ${service_name}
-
 # Reload systemd
 systemctl daemon-reload
+
+# Enable and start application service
+systemctl enable ${service_name}
+systemctl start ${service_name}
 
 #-------------------------------------------------------------------------------
 # Create Health Check Script
@@ -295,6 +379,19 @@ HEALTH_SCRIPT
 chmod +x /opt/${service_name}/health-check.sh
 
 #-------------------------------------------------------------------------------
+# Wait for Service to Start
+#-------------------------------------------------------------------------------
+
+echo "Waiting for service to start..."
+sleep 60
+
+# Check service status
+systemctl status ${service_name} --no-pager || true
+
+# Run health check
+/opt/${service_name}/health-check.sh || echo "Health check pending..."
+
+#-------------------------------------------------------------------------------
 # Final Status
 #-------------------------------------------------------------------------------
 
@@ -302,9 +399,13 @@ echo "=========================================="
 echo "EC2 User Data Script Completed"
 echo "Timestamp: $(date)"
 echo ""
-echo "Next Steps:"
-echo "1. Upload JAR to /opt/${service_name}/${service_name}.jar"
-echo "2. Run: sudo systemctl start ${service_name}"
-echo "3. Check status: sudo systemctl status ${service_name}"
-echo "4. View logs: sudo tail -f /var/log/${service_name}/${service_name}.log"
+echo "Service: ${service_name}"
+echo "Port: ${service_port}"
+echo "Status: $(systemctl is-active ${service_name})"
+echo ""
+echo "Useful Commands:"
+echo "  - Check status: sudo systemctl status ${service_name}"
+echo "  - View logs: sudo journalctl -u ${service_name} -f"
+echo "  - App logs: sudo tail -f /var/log/${service_name}/${service_name}.log"
+echo "  - Redeploy: sudo /opt/${service_name}/redeploy.sh"
 echo "=========================================="

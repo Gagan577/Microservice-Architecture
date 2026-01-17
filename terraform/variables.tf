@@ -152,3 +152,18 @@ variable "log_retention_days" {
   type        = number
   default     = 30
 }
+#-------------------------------------------------------------------------------
+# Git Repository Settings (for server-side build)
+#-------------------------------------------------------------------------------
+
+variable "git_repo_url" {
+  description = "GitHub repository URL for cloning and building on EC2"
+  type        = string
+  default     = "https://github.com/Gagan577/Microservice-Architecture.git"
+}
+
+variable "git_branch" {
+  description = "Git branch to checkout for deployment"
+  type        = string
+  default     = "main"
+}

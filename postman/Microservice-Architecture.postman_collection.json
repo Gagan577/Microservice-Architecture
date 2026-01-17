@@ -1,0 +1,942 @@
+{
+	"info": {
+		"_postman_id": "microservice-architecture-collection",
+		"name": "Microservice Architecture - Complete API Collection",
+		"description": "Comprehensive API collection for Shop-Management and Product-Stock microservices.\n\nIncludes:\n- REST APIs for both services\n- SOAP endpoint for stock availability\n- GraphQL queries and mutations\n\nEnvironment Variables:\n- shop_base_url: http://localhost:8081\n- product_base_url: http://localhost:8082",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "shop_base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "product_base_url",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "correlation_id",
+			"value": "{{$guid}}",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Shop-Management REST API",
+			"item": [
+				{
+					"name": "Shops",
+					"item": [
+						{
+							"name": "Create Shop",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"shopCode\": \"SHOP-001\",\n    \"name\": \"Downtown Electronics\",\n    \"description\": \"Premium electronics store\",\n    \"address\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"postalCode\": \"10001\",\n    \"country\": \"USA\",\n    \"phone\": \"+1-555-0100\",\n    \"email\": \"downtown@electronics.com\",\n    \"managerName\": \"John Smith\"\n}"
+								},
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/shops",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "shops"]
+								},
+								"description": "Create a new shop"
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Shops",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/shops?page=0&size=20",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "shops"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "20"
+										}
+									]
+								},
+								"description": "Get all shops with pagination"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Shop by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/shops/:shopId",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "shops", ":shopId"],
+									"variable": [
+										{
+											"key": "shopId",
+											"value": "{{shop_id}}"
+										}
+									]
+								},
+								"description": "Get a specific shop by ID"
+							},
+							"response": []
+						},
+						{
+							"name": "Update Shop",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Downtown Electronics Premium\",\n    \"description\": \"Updated premium electronics store\",\n    \"phone\": \"+1-555-0101\"\n}"
+								},
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/shops/:shopId",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "shops", ":shopId"],
+									"variable": [
+										{
+											"key": "shopId",
+											"value": "{{shop_id}}"
+										}
+									]
+								},
+								"description": "Update an existing shop"
+							},
+							"response": []
+						},
+						{
+							"name": "Deactivate Shop",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/shops/:shopId",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "shops", ":shopId"],
+									"variable": [
+										{
+											"key": "shopId",
+											"value": "{{shop_id}}"
+										}
+									]
+								},
+								"description": "Deactivate a shop (soft delete)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Orders",
+					"item": [
+						{
+							"name": "Create Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"shopId\": \"{{shop_id}}\",\n    \"customerName\": \"Jane Doe\",\n    \"customerEmail\": \"jane.doe@example.com\",\n    \"customerPhone\": \"+1-555-0200\",\n    \"shippingAddress\": \"456 Oak Avenue, New York, NY 10002\",\n    \"items\": [\n        {\n            \"productId\": \"{{product_id}}\",\n            \"productCode\": \"PROD-001\",\n            \"productName\": \"Widget Pro\",\n            \"quantity\": 2,\n            \"unitPrice\": 29.99\n        }\n    ],\n    \"notes\": \"Please gift wrap\"\n}"
+								},
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/orders",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "orders"]
+								},
+								"description": "Create a new order with stock reservation"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Order by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/orders/:orderId",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "orders", ":orderId"],
+									"variable": [
+										{
+											"key": "orderId",
+											"value": "{{order_id}}"
+										}
+									]
+								},
+								"description": "Get a specific order by ID"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Orders by Shop",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/orders/shop/:shopId?page=0&size=20",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "orders", "shop", ":shopId"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "20"
+										}
+									],
+									"variable": [
+										{
+											"key": "shopId",
+											"value": "{{shop_id}}"
+										}
+									]
+								},
+								"description": "Get all orders for a specific shop"
+							},
+							"response": []
+						},
+						{
+							"name": "Confirm Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/orders/:orderId/confirm",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "orders", ":orderId", "confirm"],
+									"variable": [
+										{
+											"key": "orderId",
+											"value": "{{order_id}}"
+										}
+									]
+								},
+								"description": "Confirm an order"
+							},
+							"response": []
+						},
+						{
+							"name": "Cancel Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{shop_base_url}}/api/v1/orders/:orderId/cancel",
+									"host": ["{{shop_base_url}}"],
+									"path": ["api", "v1", "orders", ":orderId", "cancel"],
+									"variable": [
+										{
+											"key": "orderId",
+											"value": "{{order_id}}"
+										}
+									]
+								},
+								"description": "Cancel an order and release stock reservation"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{shop_base_url}}/actuator/health",
+							"host": ["{{shop_base_url}}"],
+							"path": ["actuator", "health"]
+						},
+						"description": "Check service health"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product-Stock REST API",
+			"item": [
+				{
+					"name": "Products",
+					"item": [
+						{
+							"name": "Create Product",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.environment.set('product_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"productCode\": \"PROD-001\",\n    \"name\": \"Widget Pro\",\n    \"description\": \"High-quality professional widget\",\n    \"category\": \"Electronics\",\n    \"price\": 29.99,\n    \"weight\": 0.5,\n    \"dimensions\": \"10x5x3 cm\",\n    \"initialStock\": 100,\n    \"minimumStock\": 10,\n    \"maximumStock\": 500,\n    \"reorderPoint\": 20,\n    \"warehouseLocation\": \"A-1-2\"\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/products",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "products"]
+								},
+								"description": "Create a new product with initial stock"
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Products",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/products?page=0&size=20",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "products"],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "20"
+										}
+									]
+								},
+								"description": "Get all products with pagination"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Product by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/products/:productId",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "products", ":productId"],
+									"variable": [
+										{
+											"key": "productId",
+											"value": "{{product_id}}"
+										}
+									]
+								},
+								"description": "Get a specific product by ID"
+							},
+							"response": []
+						},
+						{
+							"name": "Search Products",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/products/search?q=widget",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "products", "search"],
+									"query": [
+										{
+											"key": "q",
+											"value": "widget"
+										}
+									]
+								},
+								"description": "Search products by name"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Product Statistics",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/products/statistics",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "products", "statistics"]
+								},
+								"description": "Get product statistics"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Stock",
+					"item": [
+						{
+							"name": "Get Stock Level",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/:productId",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", ":productId"],
+									"variable": [
+										{
+											"key": "productId",
+											"value": "{{product_id}}"
+										}
+									]
+								},
+								"description": "Get current stock level for a product"
+							},
+							"response": []
+						},
+						{
+							"name": "Check Availability (REST)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/:productId/availability?quantity=5",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", ":productId", "availability"],
+									"query": [
+										{
+											"key": "quantity",
+											"value": "5"
+										}
+									],
+									"variable": [
+										{
+											"key": "productId",
+											"value": "{{product_id}}"
+										}
+									]
+								},
+								"description": "Check stock availability for a product"
+							},
+							"response": []
+						},
+						{
+							"name": "Add Stock",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"productId\": \"{{product_id}}\",\n    \"quantity\": 50,\n    \"reference\": \"PO-2024-001\",\n    \"reason\": \"New shipment received\"\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/add",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "add"]
+								},
+								"description": "Add stock to a product"
+							},
+							"response": []
+						},
+						{
+							"name": "Reserve Stock",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.reservationCode) {",
+											"    pm.environment.set('reservation_code', jsonData.data.reservationCode);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"productId\": \"{{product_id}}\",\n    \"orderId\": \"{{order_id}}\",\n    \"quantity\": 5,\n    \"reservationMinutes\": 30\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/reserve",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "reserve"]
+								},
+								"description": "Reserve stock for an order"
+							},
+							"response": []
+						},
+						{
+							"name": "Confirm Reservation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/reservation/:reservationCode/confirm",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "reservation", ":reservationCode", "confirm"],
+									"variable": [
+										{
+											"key": "reservationCode",
+											"value": "{{reservation_code}}"
+										}
+									]
+								},
+								"description": "Confirm a stock reservation"
+							},
+							"response": []
+						},
+						{
+							"name": "Release Reservation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/reservation/:reservationCode/release",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "reservation", ":reservationCode", "release"],
+									"variable": [
+										{
+											"key": "reservationCode",
+											"value": "{{reservation_code}}"
+										}
+									]
+								},
+								"description": "Release a stock reservation"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Low Stock Items",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/low-stock",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "low-stock"]
+								},
+								"description": "Get items below minimum stock threshold"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Stock Statistics",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{product_base_url}}/api/v1/stock/statistics",
+									"host": ["{{product_base_url}}"],
+									"path": ["api", "v1", "stock", "statistics"]
+								},
+								"description": "Get stock statistics"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{product_base_url}}/actuator/health",
+							"host": ["{{product_base_url}}"],
+							"path": ["actuator", "health"]
+						},
+						"description": "Check service health"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "SOAP API",
+			"item": [
+				{
+					"name": "Check Stock Availability (SOAP)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							},
+							{
+								"key": "SOAPAction",
+								"value": ""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"\n               xmlns:prod=\"http://enterprise.com/product/soap\">\n    <soap:Header/>\n    <soap:Body>\n        <prod:StockAvailabilityRequest>\n            <prod:productId>{{product_id}}</prod:productId>\n            <prod:quantity>5</prod:quantity>\n        </prod:StockAvailabilityRequest>\n    </soap:Body>\n</soap:Envelope>"
+						},
+						"url": {
+							"raw": "{{product_base_url}}/ws",
+							"host": ["{{product_base_url}}"],
+							"path": ["ws"]
+						},
+						"description": "Check stock availability via SOAP endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Get WSDL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{product_base_url}}/ws/stockAvailability.wsdl",
+							"host": ["{{product_base_url}}"],
+							"path": ["ws", "stockAvailability.wsdl"]
+						},
+						"description": "Get the WSDL definition for the SOAP service"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GraphQL API",
+			"item": [
+				{
+					"name": "Shop-Management GraphQL",
+					"item": [
+						{
+							"name": "Get Shop with Stock (Cross-Service)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query GetShopWithStock($shopId: ID!, $productId: ID!) { shopWithStock(shopId: $shopId, productId: $productId) { shop { id shopCode name city } productStock { productId productCode availableQuantity reservedQuantity } } }\",\n    \"variables\": {\n        \"shopId\": \"{{shop_id}}\",\n        \"productId\": \"{{product_id}}\"\n    }\n}"
+								},
+								"url": {
+									"raw": "{{shop_base_url}}/graphql",
+									"host": ["{{shop_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "GraphQL query that fetches shop data and stock information from Product-Stock service"
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Shops (GraphQL)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query { shops(page: 0, size: 10) { content { id shopCode name city status } totalElements totalPages } }\"\n}"
+								},
+								"url": {
+									"raw": "{{shop_base_url}}/graphql",
+									"host": ["{{shop_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Get all shops via GraphQL"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Product-Stock GraphQL",
+					"item": [
+						{
+							"name": "Get Product with Stock",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-Correlation-ID",
+										"value": "{{correlation_id}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query GetProductWithStock($productId: ID!) { productWithStock(productId: $productId) { product { id productCode name category price status } stock { availableQuantity reservedQuantity isLowStock needsReorder } } }\",\n    \"variables\": {\n        \"productId\": \"{{product_id}}\"\n    }\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/graphql",
+									"host": ["{{product_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Get product with stock information via GraphQL"
+							},
+							"response": []
+						},
+						{
+							"name": "Check Availability (GraphQL)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query CheckAvailability($productId: ID!, $quantity: Int!) { checkAvailability(productId: $productId, quantity: $quantity) { productId productCode requestedQuantity availableQuantity isAvailable message } }\",\n    \"variables\": {\n        \"productId\": \"{{product_id}}\",\n        \"quantity\": 10\n    }\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/graphql",
+									"host": ["{{product_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Check stock availability via GraphQL"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Product (GraphQL Mutation)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"mutation CreateProduct($input: CreateProductInput!) { createProduct(input: $input) { id productCode name category price status createdAt } }\",\n    \"variables\": {\n        \"input\": {\n            \"productCode\": \"PROD-002\",\n            \"name\": \"Widget Lite\",\n            \"description\": \"Entry-level widget\",\n            \"category\": \"Electronics\",\n            \"price\": 19.99,\n            \"initialStock\": 50,\n            \"minimumStock\": 5\n        }\n    }\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/graphql",
+									"host": ["{{product_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Create a new product via GraphQL mutation"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Low Stock Items (GraphQL)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query { lowStockItems { productId productCode availableQuantity minimumStock isLowStock warehouseLocation } }\"\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/graphql",
+									"host": ["{{product_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Get all low stock items via GraphQL"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Stock Statistics (GraphQL)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"query\": \"query { stockStatistics { totalAvailableStock totalReservedStock lowStockItemCount outOfStockItemCount pendingReservationsCount } }\"\n}"
+								},
+								"url": {
+									"raw": "{{product_base_url}}/graphql",
+									"host": ["{{product_base_url}}"],
+									"path": ["graphql"]
+								},
+								"description": "Get stock statistics via GraphQL"
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

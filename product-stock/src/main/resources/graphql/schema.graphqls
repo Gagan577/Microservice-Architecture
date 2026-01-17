@@ -1,0 +1,166 @@
+type Query {
+    # Product queries
+    product(id: ID!): Product
+    productByCode(productCode: String!): Product
+    products(page: Int = 0, size: Int = 20): ProductPage
+    productsByCategory(category: String!, page: Int = 0, size: Int = 20): ProductPage
+    searchProducts(query: String!, page: Int = 0, size: Int = 20): ProductPage
+    productCategories: [String!]!
+    productStatistics: ProductStatistics
+
+    # Stock queries
+    stockLevel(productId: ID!): StockLevel
+    stockLevels(productIds: [ID!]!): [StockLevel!]!
+    checkAvailability(productId: ID!, quantity: Int!): AvailabilityCheck
+    lowStockItems: [StockLevel!]!
+    outOfStockItems: [StockLevel!]!
+    stockStatistics: StockStatistics
+
+    # Combined query for Shop-Management service
+    productWithStock(productId: ID!): ProductWithStock
+}
+
+type Mutation {
+    # Product mutations
+    createProduct(input: CreateProductInput!): Product
+    updateProduct(id: ID!, input: UpdateProductInput!): Product
+    deactivateProduct(id: ID!): Boolean
+
+    # Stock mutations
+    addStock(input: UpdateStockInput!): StockLevel
+    removeStock(input: UpdateStockInput!): StockLevel
+    reserveStock(input: ReserveStockInput!): ReservationResult
+    confirmReservation(reservationCode: String!): ReservationResult
+    releaseReservation(reservationCode: String!): ReservationResult
+    updateStockThresholds(productId: ID!, minimumStock: Int, maximumStock: Int, reorderPoint: Int): StockLevel
+}
+
+# Product types
+type Product {
+    id: ID!
+    productCode: String!
+    name: String!
+    description: String
+    category: String
+    price: Float!
+    weight: Float
+    dimensions: String
+    status: ProductStatus!
+    createdAt: String
+    updatedAt: String
+}
+
+type ProductPage {
+    content: [Product!]!
+    totalElements: Int!
+    totalPages: Int!
+    page: Int!
+    size: Int!
+}
+
+type ProductStatistics {
+    totalProducts: Int!
+    activeProducts: Int!
+    inactiveProducts: Int!
+    discontinuedProducts: Int!
+    totalCategories: Int!
+    categories: [String!]!
+}
+
+enum ProductStatus {
+    ACTIVE
+    INACTIVE
+    DISCONTINUED
+}
+
+input CreateProductInput {
+    productCode: String!
+    name: String!
+    description: String
+    category: String
+    price: Float!
+    weight: Float
+    dimensions: String
+    initialStock: Int
+    minimumStock: Int
+    maximumStock: Int
+    reorderPoint: Int
+    warehouseLocation: String
+}
+
+input UpdateProductInput {
+    name: String
+    description: String
+    category: String
+    price: Float
+    weight: Float
+    dimensions: String
+    status: ProductStatus
+}
+
+# Stock types
+type StockLevel {
+    id: ID!
+    productId: ID!
+    productCode: String!
+    availableQuantity: Int!
+    reservedQuantity: Int!
+    totalQuantity: Int!
+    minimumStock: Int!
+    maximumStock: Int!
+    reorderPoint: Int!
+    warehouseLocation: String
+    isLowStock: Boolean!
+    needsReorder: Boolean!
+    lastUpdated: String
+}
+
+type AvailabilityCheck {
+    productId: ID!
+    productCode: String
+    requestedQuantity: Int!
+    availableQuantity: Int!
+    isAvailable: Boolean!
+    message: String
+    checkedAt: String
+}
+
+type ReservationResult {
+    reservationId: ID
+    reservationCode: String!
+    productId: ID!
+    quantity: Int!
+    status: String!
+    expiresAt: String
+    confirmedAt: String
+    releasedAt: String
+    message: String
+}
+
+type StockStatistics {
+    totalAvailableStock: Int!
+    totalReservedStock: Int!
+    lowStockItemCount: Int!
+    outOfStockItemCount: Int!
+    pendingReservationsCount: Int!
+}
+
+input UpdateStockInput {
+    productId: ID!
+    quantity: Int!
+    reference: String
+    reason: String
+}
+
+input ReserveStockInput {
+    productId: ID!
+    orderId: ID!
+    quantity: Int!
+    reservationMinutes: Int
+}
+
+# Combined type for cross-service queries
+type ProductWithStock {
+    product: Product!
+    stock: StockLevel!
+}

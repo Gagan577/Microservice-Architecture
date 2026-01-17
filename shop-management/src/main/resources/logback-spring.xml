@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- Properties from Spring -->
+    <springProperty scope="context" name="serviceName" source="logging.service.name" defaultValue="shop-management"/>
+    <springProperty scope="context" name="environment" source="logging.environment" defaultValue="development"/>
+    <springProperty scope="context" name="logPath" source="logging.file.path" defaultValue="/var/log/shop-management"/>
+
+    <!-- Console Appender for Development -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>apiType</includeMdcKeyName>
+            <includeMdcKeyName>endpoint</includeMdcKeyName>
+            <includeMdcKeyName>httpMethod</includeMdcKeyName>
+            <customFields>{"service":"${serviceName}","environment":"${environment}"}</customFields>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Application Log File Appender (JSON Format) -->
+    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logPath}/archived/application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>apiType</includeMdcKeyName>
+            <includeMdcKeyName>endpoint</includeMdcKeyName>
+            <includeMdcKeyName>httpMethod</includeMdcKeyName>
+            <includeMdcKeyName>headers</includeMdcKeyName>
+            <includeMdcKeyName>requestPayload</includeMdcKeyName>
+            <includeMdcKeyName>responsePayload</includeMdcKeyName>
+            <includeMdcKeyName>executionTimeMs</includeMdcKeyName>
+            <includeMdcKeyName>statusCode</includeMdcKeyName>
+            <includeMdcKeyName>clientIp</includeMdcKeyName>
+            <includeMdcKeyName>userAgent</includeMdcKeyName>
+            <customFields>{"service":"${serviceName}","environment":"${environment}"}</customFields>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Error Log File Appender -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logPath}/archived/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>spanId</includeMdcKeyName>
+            <includeMdcKeyName>apiType</includeMdcKeyName>
+            <includeMdcKeyName>endpoint</includeMdcKeyName>
+            <includeMdcKeyName>httpMethod</includeMdcKeyName>
+            <includeMdcKeyName>headers</includeMdcKeyName>
+            <includeMdcKeyName>requestPayload</includeMdcKeyName>
+            <includeMdcKeyName>responsePayload</includeMdcKeyName>
+            <includeMdcKeyName>executionTimeMs</includeMdcKeyName>
+            <includeMdcKeyName>statusCode</includeMdcKeyName>
+            <includeMdcKeyName>errorStack</includeMdcKeyName>
+            <customFields>{"service":"${serviceName}","environment":"${environment}"}</customFields>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                <maxLength>4096</maxLength>
+                <shortenedClassNameLength>30</shortenedClassNameLength>
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Request/Response Debug Log -->
+    <appender name="REQUEST_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logPath}/requests.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logPath}/archived/requests.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>200MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>apiType</includeMdcKeyName>
+            <includeMdcKeyName>endpoint</includeMdcKeyName>
+            <includeMdcKeyName>httpMethod</includeMdcKeyName>
+            <includeMdcKeyName>headers</includeMdcKeyName>
+            <includeMdcKeyName>requestPayload</includeMdcKeyName>
+            <includeMdcKeyName>responsePayload</includeMdcKeyName>
+            <includeMdcKeyName>executionTimeMs</includeMdcKeyName>
+            <includeMdcKeyName>statusCode</includeMdcKeyName>
+            <customFields>{"service":"${serviceName}","environment":"${environment}","logType":"request-response"}</customFields>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <!-- Async Appenders for Performance -->
+    <appender name="ASYNC_APPLICATION" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="APPLICATION_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_REQUEST" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="REQUEST_LOG"/>
+    </appender>
+
+    <!-- Logger for Request/Response Logging -->
+    <logger name="com.enterprise.shop.logging" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_REQUEST"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Logger for Application Code -->
+    <logger name="com.enterprise.shop" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+        <appender-ref ref="ASYNC_ERROR"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- SQL Logging -->
+    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+    </logger>
+
+    <!-- Spring Framework Logging -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Root Logger -->
+    <root level="INFO">
+        <appender-ref ref="ASYNC_APPLICATION"/>
+        <appender-ref ref="ASYNC_ERROR"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

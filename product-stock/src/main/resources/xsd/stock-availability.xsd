@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://enterprise.com/product/soap"
+           targetNamespace="http://enterprise.com/product/soap"
+           elementFormDefault="qualified">
+
+    <!-- Stock Availability Request -->
+    <xs:element name="StockAvailabilityRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="productId" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation>UUID of the product to check</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="quantity" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation>Quantity to check availability for</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Stock Availability Response -->
+    <xs:element name="StockAvailabilityResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="productId" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation>UUID of the product</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="productCode" type="xs:string" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Product code</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="requestedQuantity" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation>Quantity that was requested</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="availableQuantity" type="xs:int">
+                    <xs:annotation>
+                        <xs:documentation>Current available quantity</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="available" type="xs:boolean">
+                    <xs:annotation>
+                        <xs:documentation>Whether the requested quantity is available</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="message" type="xs:string" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Additional message about availability</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="checkedAt" type="xs:string" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Timestamp when availability was checked</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="correlationId" type="xs:string" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Correlation ID for distributed tracing</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

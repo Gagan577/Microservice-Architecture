@@ -1,0 +1,37 @@
+#===============================================================================
+# Terraform Variables - Example Values
+# 
+# Copy this file to terraform.tfvars and update with your values.
+# NEVER commit terraform.tfvars with sensitive data to version control!
+#===============================================================================
+
+# General Settings
+project_name = "microservice-arch"
+environment  = "development"
+aws_region   = "us-east-1"
+
+# VPC Settings
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+enable_nat_gateway   = false
+
+# EC2 Settings
+ec2_instance_type = "t3.medium"
+key_pair_name     = "your-key-pair-name"
+ssh_allowed_cidrs = ["YOUR_IP/32"]  # Replace with your IP
+java_opts         = "-Xms512m -Xmx1024m -XX:+UseG1GC"
+
+# RDS Settings
+db_instance_class          = "db.t3.medium"
+db_engine_version          = "15.4"
+db_name                    = "microservices"
+db_username                = "dbadmin"
+db_password                = "CHANGE_THIS_PASSWORD"  # Use a strong password!
+db_allocated_storage       = 20
+db_max_allocated_storage   = 100
+db_multi_az                = false
+db_backup_retention_period = 7
+
+# Logging
+log_retention_days = 30

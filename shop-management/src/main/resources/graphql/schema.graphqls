@@ -1,0 +1,134 @@
+# Shop Management GraphQL Schema
+
+type Query {
+    # Shop queries
+    shop(id: ID!): Shop
+    shopByCode(code: String!): Shop
+    shops(page: Int = 0, size: Int = 20, status: ShopStatus): ShopConnection!
+    
+    # Shop with live stock information (cross-service query)
+    shopWithStock(shopId: ID!): ShopWithStock
+    
+    # Order queries
+    order(id: ID!): Order
+    orderByNumber(orderNumber: String!): Order
+    ordersByShop(shopId: ID!, page: Int = 0, size: Int = 20): OrderConnection!
+}
+
+# Shop type
+type Shop {
+    id: ID!
+    shopCode: String!
+    name: String!
+    description: String
+    addressLine1: String!
+    addressLine2: String
+    city: String!
+    state: String
+    postalCode: String!
+    country: String!
+    phone: String
+    email: String
+    status: ShopStatus!
+    openingHours: [OpeningHour]
+    createdAt: String!
+    updatedAt: String!
+}
+
+# Shop with live stock data from Product service
+type ShopWithStock {
+    shop: Shop!
+    stockItems: [StockItem]!
+    lastSyncedAt: String
+}
+
+# Stock item from Product service
+type StockItem {
+    productId: ID!
+    productCode: String!
+    productName: String!
+    availableQuantity: Int!
+    reservedQuantity: Int!
+    status: String!
+}
+
+# Order type
+type Order {
+    id: ID!
+    orderNumber: String!
+    shop: Shop!
+    customerName: String!
+    customerEmail: String!
+    customerPhone: String
+    status: OrderStatus!
+    subtotal: Float!
+    taxAmount: Float!
+    shippingAmount: Float!
+    discountAmount: Float!
+    totalAmount: Float!
+    currency: String!
+    items: [OrderItem]!
+    orderedAt: String!
+    shippedAt: String
+    deliveredAt: String
+    cancelledAt: String
+}
+
+# Order item type
+type OrderItem {
+    id: ID!
+    productId: ID!
+    productCode: String!
+    productName: String!
+    quantity: Int!
+    unitPrice: Float!
+    lineTotal: Float!
+    reservationStatus: String
+}
+
+# Opening hours
+type OpeningHour {
+    day: String!
+    hours: String!
+}
+
+# Pagination for shops
+type ShopConnection {
+    content: [Shop]!
+    pageInfo: PageInfo!
+}
+
+# Pagination for orders
+type OrderConnection {
+    content: [Order]!
+    pageInfo: PageInfo!
+}
+
+# Pagination info
+type PageInfo {
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    hasNext: Boolean!
+    hasPrevious: Boolean!
+}
+
+# Shop status enum
+enum ShopStatus {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+    CLOSED
+}
+
+# Order status enum
+enum OrderStatus {
+    PENDING
+    CONFIRMED
+    PROCESSING
+    SHIPPED
+    DELIVERED
+    CANCELLED
+    REFUNDED
+}
